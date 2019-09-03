@@ -1,21 +1,63 @@
+project_name: supervisord
+
+env:
+  - GO111MODULE=on
+
+before:
+  hooks:
+    - go mod tidy
+
 builds:
-  -
-    binary: supervisord_static
-    goos:
-      - linux
-      #- darwin
-    goarch:
-      - amd64
-    ldflags:
-    - "-linkmode external -extldflags -static"
-  -
+  - id: default
     binary: supervisord
     goos:
       - linux
       - darwin
     goarch:
       - amd64
-archive:
-  format: binary
+      - arm
+      - arm64
+      - 386
+    goarm:
+      - 6
+      - 7
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: darwin
+        goarch: arm
+      - goos: darwin
+        goarch: arm64
+    flags:
+      - -v
+    ldflags:
+      - -s -w -v
+      - -X "main.version={{.Version}}"
+      - -X "main.commit={{.FullCommit}}"
+      - -X "main.repoUrl={{.GitURL}}"
+      - -X "main.buildTimestamp={{.Timestamp}}"
+      - -X "main.buildDate={{.Date}}"
+      - -X "main.builtWith=goreleaser"
+      - -X "main.builtWithGoVersion={{.Env.GO_VERSION}}"
+      - -X "main.builtBy={{.Env.BUILT_BY}}"
+      - -X "main.buildFlavor=default"
+    hooks:
+      pre: rice embed-go
+      post: ./build-compress.sh
+archives:
+  - id: binary
+    format: binary
+    builds: 
+      - default
+    name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}.v{{ .Version }}.bin"
+    replacements:
+      amd64: x86_64
+      386: x86_32
+      darwin: macos
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
 snapshot:
-  name_template: "{{.Commit}}"
+  name_template: dev-{{.Env.GIT_BRANCH}}

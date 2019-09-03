@@ -1,17 +1,41 @@
 language: go
 
 go:
-  - "1.12.x"
+  - "1.13.x"
 
 env:
   - GO111MODULE=on
 
-install: true
+install:
+  - curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh -s -- -b $(go env GOPATH)/bin v0.117.1
+  - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.17.1
+
+before_script:
+  - rm -f rice-box.go && rice embed-go
+
+script: go test ${gobuild_args} -v ./...
 
 after_script:
-  - go get -v github.com/alecthomas/gometalinter/...
-  - gometalinter --install
-  - gometalinter
+  - golangci-lint run || true
 
-after_success:
-  - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
+deploy:
+  - provider: script
+    skip_cleanup: true
+    script: |
+      export GO_VERSION="$TRAVIS_GO_VERSION" 
+      export BUILT_BY="$(whoami)@$(hostname)"
+      export GIT_BRANCH="$TRAVIS_BRANCH"
+      goreleaser 
+    on:
+      tags: true
+
+  - provider: script
+    skip_cleanup: true
+    script: |
+      export GO_VERSION="$TRAVIS_GO_VERSION" 
+      export BUILT_BY="$(whoami)@$(hostname)"
+      export GIT_BRANCH="$TRAVIS_BRANCH"
+      goreleaser --rm-dist --snapshot --debug
+    on:
+      all_branches: true
+      tags: false

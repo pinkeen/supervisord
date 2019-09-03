@@ -1,18 +1,25 @@
 package main
 
-import (
-	"fmt"
+import "fmt"
+
+var (
+	version 	 	   = "dev"
+	commit  	 	   = "none"
+	repoUrl	   = "unknown"
+	buildDate    	   = "unknown"
+	buildFlavor  	   = "unknown"
+	builtBy    	 	   = "unknown"
+	builtWithGoVersion = "unknown"
 )
 
-const VERSION = "v0.6"
-
-type VersionCommand struct {
-}
+type VersionCommand struct {}
 
 var versionCommand VersionCommand
 
 func (v VersionCommand) Execute(args []string) error {
-	fmt.Println(VERSION)
+	fmt.Printf("supervisor %v (%v#%v)\n\n", version, repoUrl, commit);
+	fmt.Printf("build:\n  flavor=%v\n  date=%v\n  by=%v\n  using=%v\n", buildFlavor, buildDate, builtBy, builtWithGoVersion);
+	
 	return nil
 }
 

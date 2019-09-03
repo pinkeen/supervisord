@@ -1,8 +1,8 @@
-.idea
-supervisord
-test.log*
-.tags*
-debug
-go-debug.json
-vendor
-supervisord_linux_amd64
+*.log
+*.log.*
+*-debug.json
+/debug
+/vendor
+/dist
+
+
