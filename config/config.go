@@ -482,15 +482,22 @@ func (c *Config) parseProgram(cfg *ini.Ini) []string {
 
 		program_or_event_listener, prefix := c.isProgramOrEventListener(section)
 
-		//if it is program or event listener
 		if program_or_event_listener {
-			//get the number of processes
-			numProcs, err := section.GetInt("numprocs")
 			programName := section.Name[len(prefix):]
+			numProcsRaw, err := section.GetValue("numprocs")
+
 			if err != nil {
-				numProcs = 1
+				log.WithFields(log.Fields{
+					"program_name": programName,
+				}).Warn("No num_procs configured - using default value 1")
 			}
+
+			numProcsResolved, err := NewStringExpression().Eval(numProcsRaw)
+			section.Add("num_procs", numProcsResolved)
+
+			numProcs := toInt(numProcsResolved, 1, 1)
 			procName, err := section.GetValue("process_name")
+
 			if numProcs > 1 {
 				if err != nil || strings.Index(procName, "%(process_num)") == -1 {
 					log.WithFields(log.Fields{

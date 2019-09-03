@@ -3,8 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/jessevdk/go-flags"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -12,6 +10,9 @@ import (
 	"strings"
 	"syscall"
 	"unicode"
+
+	"github.com/jessevdk/go-flags"
+	log "github.com/sirupsen/logrus"
 )
 
 type Options struct {
@@ -35,7 +36,7 @@ func initSignals(s *Supervisor) {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-sigs
-		log.WithFields(log.Fields{"signal": sig}).Info("receive a signal to stop all process & exit")
+		log.WithFields(log.Fields{"reason": "Signal received", "signal": sig}).Warn("Daemon is SHUTTING DOWN")
 		s.procMgr.StopAllProcesses()
 		os.Exit(-1)
 	}()
@@ -52,7 +53,7 @@ func LoadEnvFile() {
 	//try to open the environment file
 	f, err := os.Open(options.EnvFile)
 	if err != nil {
-		log.WithFields(log.Fields{"file": options.EnvFile}).Error("Fail to open environment file")
+		log.WithFields(log.Fields{"file": options.EnvFile}).Error("Could not open the specified ENV file")
 		return
 	}
 	defer f.Close()
@@ -147,7 +148,7 @@ func main() {
 					RunServer()
 				}
 			default:
-				fmt.Fprintf(os.Stderr, "error when parsing command: %s\n", err)
+				fmt.Fprintf(os.Stderr, "Invalid arguments: %s\n", err)
 				os.Exit(1)
 			}
 		}

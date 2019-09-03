@@ -65,10 +65,12 @@ func NewXmlRPC() *XmlRPC {
 
 // stop network listening
 func (p *XmlRPC) Stop() {
-	log.Info("stop listening")
-	for _, listener := range p.listeners {
+	for name, listener := range p.listeners {
 		listener.Close()
+
+		log.WithFields(log.Fields{"listener": name}).Info("Stopped XMLRPC Server Listener")
 	}
+
 	p.started = false
 }
 

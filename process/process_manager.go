@@ -5,7 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ochinchina/supervisord/config"
+	"supervisord/config"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -50,7 +51,9 @@ func (pm *ProcessManager) createProgram(supervisor_id string, config *config.Con
 		proc = NewProcess(supervisor_id, config)
 		pm.procs[procName] = proc
 	}
-	log.Info("create process:", procName)
+
+	log.WithFields(log.Fields{"process": procName}).Info("Created Process")
+
 	return proc
 }
 
@@ -63,7 +66,9 @@ func (pm *ProcessManager) createEventListener(supervisor_id string, config *conf
 		evtListener = NewProcess(supervisor_id, config)
 		pm.eventListeners[eventListenerName] = evtListener
 	}
-	log.Info("create event listener:", eventListenerName)
+
+	log.WithFields(log.Fields{"listener": eventListenerName}).Info("Created Event Listener")
+
 	return evtListener
 }
 
@@ -71,7 +76,8 @@ func (pm *ProcessManager) Add(name string, proc *Process) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	pm.procs[name] = proc
-	log.Info("add process:", name)
+
+	log.WithFields(log.Fields{"process": name}).Info("Added Process")
 }
 
 // remove the process from the manager
@@ -85,7 +91,7 @@ func (pm *ProcessManager) Remove(name string) *Process {
 	defer pm.lock.Unlock()
 	proc, _ := pm.procs[name]
 	delete(pm.procs, name)
-	log.Info("remove process:", name)
+	log.WithFields(log.Fields{"process": name}).Info("Removed Process")
 	return proc
 }
 
@@ -121,7 +127,7 @@ func (pm *ProcessManager) FindMatch(name string) []*Process {
 		}
 	}
 	if len(result) <= 0 {
-		log.Info("fail to find process:", name)
+		log.WithFields(log.Fields{"process": name}).Warn("Cannot find Process")
 	}
 	return result
 }

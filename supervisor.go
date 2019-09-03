@@ -2,20 +2,20 @@ package main
 
 import (
 	"fmt"
-	"github.com/ochinchina/supervisord/config"
 	"net/http"
 	"os"
 	"strings"
+	"supervisord/config"
 	"sync"
 	"time"
 
-	"github.com/ochinchina/supervisord/events"
-	"github.com/ochinchina/supervisord/faults"
-	"github.com/ochinchina/supervisord/logger"
-	"github.com/ochinchina/supervisord/process"
-	"github.com/ochinchina/supervisord/signals"
-	"github.com/ochinchina/supervisord/types"
-	"github.com/ochinchina/supervisord/util"
+	"supervisord/events"
+	"supervisord/faults"
+	"supervisord/logger"
+	"supervisord/process"
+	"supervisord/signals"
+	"supervisord/types"
+	"supervisord/util"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -148,17 +148,22 @@ func (s *Supervisor) ClearLog(r *http.Request, args *struct{}, reply *struct{ Re
 
 func (s *Supervisor) Shutdown(r *http.Request, args *struct{}, reply *struct{ Ret bool }) error {
 	reply.Ret = true
-	log.Info("received rpc request to stop all processes & exit")
+
+	log.WithFields(log.Fields{"reason": "Request received via RPC"}).Warn("Daemon is SHUTTING DOWN")
+
 	s.procMgr.StopAllProcesses()
+
 	go func() {
 		time.Sleep(1 * time.Second)
 		os.Exit(0)
 	}()
+
 	return nil
 }
 
 func (s *Supervisor) Restart(r *http.Request, args *struct{}, reply *struct{ Ret bool }) error {
-	log.Info("Receive instruction to restart")
+	log.WithFields(log.Fields{"reason": "Request received via RPC"}).Warn("Daemon is RESTARTING")
+
 	s.restarting = true
 	reply.Ret = true
 	return nil
@@ -266,7 +271,7 @@ func (s *Supervisor) StartProcessGroup(r *http.Request, args *StartProcessArgs, 
 }
 
 func (s *Supervisor) StopProcess(r *http.Request, args *StartProcessArgs, reply *struct{ Success bool }) error {
-	log.WithFields(log.Fields{"program": args.Name}).Info("stop process")
+	log.WithFields(log.Fields{"process": args.Name, "reason": "Request received via RPC"}).Info("Stopping Process on request")
 	procs := s.procMgr.FindMatch(args.Name)
 	if len(procs) <= 0 {
 		return fmt.Errorf("fail to find process %s", args.Name)
@@ -279,7 +284,7 @@ func (s *Supervisor) StopProcess(r *http.Request, args *StartProcessArgs, reply 
 }
 
 func (s *Supervisor) StopProcessGroup(r *http.Request, args *StartProcessArgs, reply *struct{ AllProcessInfo []types.ProcessInfo }) error {
-	log.WithFields(log.Fields{"group": args.Name}).Info("stop process group")
+	log.WithFields(log.Fields{"group": args.Name, "reason": "Request received via RPC"}).Info("Stopping Process Group on request")
 	finishedProcCh := make(chan *process.Process)
 	n := s.procMgr.AsyncForEachProcess(func(proc *process.Process) {
 		if proc.GetGroup() == args.Name {
@@ -411,7 +416,7 @@ func (s *Supervisor) Reload() (error, []string, []string, []string) {
 	}
 	removedPrograms := util.Sub(prevPrograms, loaded_programs)
 	for _, removedProg := range removedPrograms {
-		log.WithFields(log.Fields{"program": removedProg}).Info("the program is removed and will be stopped")
+		log.WithFields(log.Fields{"process": removedProg, "reason": "Request received via RPC"}).Info("REMOVING Process on request")
 		s.config.RemoveProgram(removedProg)
 		proc := s.procMgr.Remove(removedProg)
 		if proc != nil {
@@ -501,7 +506,7 @@ func (s *Supervisor) setSupervisordInfo() {
 		if err == nil {
 			logfile_maxbytes := int64(supervisordConf.GetBytes("logfile_maxbytes", 50*1024*1024))
 			logfile_backups := supervisordConf.GetInt("logfile_backups", 10)
-			loglevel := supervisordConf.GetString("loglevel", "info")
+			loglevel := supervisordConf.GetString("loglevel", "debug")
 			s.logger = logger.NewLogger("supervisord", logFile, &sync.Mutex{}, logfile_maxbytes, logfile_backups, logEventEmitter)
 			log.SetLevel(toLogLevel(loglevel))
 			log.SetFormatter(&log.TextFormatter{DisableColors: true, FullTimestamp: true})

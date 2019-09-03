@@ -3,7 +3,7 @@ package config
 import (
 	"bytes"
 	"strings"
-	"github.com/ochinchina/supervisord/util"
+	"supervisord/util"
 )
 
 type ProcessGroup struct {
